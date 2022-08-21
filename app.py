@@ -127,16 +127,16 @@ def index():
 def venues():
     # TODO: replace with real venues data.
     #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-    all_areas = Venue.query.with_entities(func.count(
+    places = Venue.query.with_entities(func.count(
         Venue.id), Venue.city, Venue.state).group_by(Venue.city, Venue.state).all()
     data = []
 
-    for area in all_areas:
-        area_venues = Venue.query.filter_by(
-            state=area.state).filter_by(city=area.city).all()
+    for place in places:
+        place_venues = Venue.query.filter_by(
+            state=place.state).filter_by(city=place.city).all()
         venue_data = []
 
-        for venue in area_venues:
+        for venue in place_venues:
             venue_data.append({
                 "id": venue.id,
                 "name": venue.name,
@@ -144,8 +144,8 @@ def venues():
             })
 
             data.append({
-                "city": area.city,
-                "state": area.state,
+                "city": place.city,
+                "state": place.state,
                 "venues": venue_data
             })
 
@@ -170,7 +170,7 @@ def venues():
     #         "num_upcoming_shows": 0,
     #     }]
     # }]
-    return render_template('pages/venues.html', areas=data)
+    return render_template('pages/venues.html', places=data)
 
 
 @app.route('/venues/search', methods=['POST'])
@@ -179,12 +179,12 @@ def search_venues():
     # seach for Hop should return "The Musical Hop".
     # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
 
-    search_term = request.form.get('search_term', '')
-    search_result = db.session.query(Venue).filter(
-        Venue.name.ilike(f'%{search_term}%')).all()
+    search_word = request.form.get('search_word', '')
+    search_word_result = db.session.query(Venue).filter(
+        Venue.name.ilike(f'%{search_word}%')).all()
     data = []
 
-    for result in search_result:
+    for result in search_word_result:
         data.append({
             "id": result.id,
             "name": result.name,
@@ -192,7 +192,7 @@ def search_venues():
         })
 
     response = {
-        "count": len(search_result),
+        "count": len(search_word_result),
         "data": data
         # "count": 1,
         # "data": [{
@@ -201,7 +201,7 @@ def search_venues():
         #     "num_upcoming_shows": 0,
         # }]
     }
-    return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
+    return render_template('pages/search_venues.html', results=response, search_word=request.form.get('search_word', ''))
 
 
 @app.route('/venues/<int:venue_id>')
@@ -214,15 +214,15 @@ def show_venue(venue_id):
     if not venue:
         return render_template('errors/404.html')
 
-    upcoming_shows_query = db.session.query(Show).join(Artist).filter(
+    upcoming_shows_get = db.session.query(Show).join(Artist).filter(
         Show.venue_id == venue_id).filter(Show.start_time > datetime.now()).all()
     upcoming_shows = []
 
-    past_shows_query = db.session.query(Show).join(Artist).filter(
+    past_shows_get = db.session.query(Show).join(Artist).filter(
         Show.venue_id == venue_id).filter(Show.start_time < datetime.now()).all()
     past_shows = []
 
-    for show in past_shows_query:
+    for show in past_shows_get:
         past_shows.append({
             "artist_id": show.artist_id,
             "artist_name": show.artist.name,
@@ -230,7 +230,7 @@ def show_venue(venue_id):
             "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
         })
 
-    for show in upcoming_shows_query:
+    for show in upcoming_shows_get:
         upcoming_shows.append({
             "artist_id": show.artist_id,
             "artist_name": show.artist.name,
@@ -400,25 +400,9 @@ def delete_venue(venue_id):
     # TODO: Complete this endpoint for taking a venue_id, and using
     # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
 
-    error = False
-    try:
-        venue = Venue.query.get(venue_id)
-        db.session.delete(venue)
-        db.session.commit()
-    except:
-        error = True
-        db.session.rollback()
-        print(sys.exc_info())
-    finally:
-        db.session.close()
-    if error:
-        flash(f'An error occurred. Venue {venue_id} could not be deleted.')
-    if not error:
-        flash(f'Venue {venue_id} was successfully deleted.')
-
-        # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
-        # clicking that button delete it from the db then redirect the user to the homepage
-        return None
+    # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
+    # clicking that button delete it from the db then redirect the user to the homepage
+    return None
 
 #  Artists
 #  ----------------------------------------------------------------
@@ -449,12 +433,12 @@ def search_artists():
     # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
     # search for "band" should return "The Wild Sax Band".
 
-    search_term = request.form.get('search_term', '')
-    search_result = db.session.query(Artist).filter(
-        Artist.name.ilike(f'%{search_term}%')).all()
+    search_word = request.form.get('search_word', '')
+    search_word_result = db.session.query(Artist).filter(
+        Artist.name.ilike(f'%{search_word}%')).all()
     data = []
 
-    for result in search_result:
+    for result in search_word_result:
         data.append({
             "id": result.id,
             "name": result.name,
@@ -462,7 +446,7 @@ def search_artists():
         })
 
     response = {
-        "count": len(search_result),
+        "count": len(search_word_result),
         "data": data
     }
 
@@ -474,7 +458,7 @@ def search_artists():
     #         "num_upcoming_shows": 0,
     #     }]
     # }
-    return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
+    return render_template('pages/search_artists.html', results=response, search_word=request.form.get('search_word', ''))
 
 
 @app.route('/artists/<int:artist_id>')
@@ -482,16 +466,16 @@ def show_artist(artist_id):
     # shows the artist page with the given artist_id
     # TODO: replace with real artist data from the artist table, using artist_id
 
-    artist_query = db.session.query(Artist).get(artist_id)
+    artist_get = db.session.query(Artist).get(artist_id)
 
-    if not artist_query:
+    if not artist_get:
         return render_template('errors/404.html')
 
-    past_shows_query = db.session.query(Show).join(Venue).filter(
+    past_shows_get = db.session.query(Show).join(Venue).filter(
         Show.artist_id == artist_id).filter(Show.start_time < datetime.now()).all()
     past_shows = []
 
-    for show in past_shows_query:
+    for show in past_shows_get:
         past_shows.append({
             "venue_id": show.venue_id,
             "venue_name": show.venue.name,
@@ -499,11 +483,11 @@ def show_artist(artist_id):
             "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
         })
 
-    upcoming_shows_query = db.session.query(Show).join(Venue).filter(
+    upcoming_shows_get = db.session.query(Show).join(Venue).filter(
         Show.artist_id == artist_id).filter(Show.start_time > datetime.now()).all()
     upcoming_shows = []
 
-    for show in upcoming_shows_query:
+    for show in upcoming_shows_get:
         upcoming_shows.append({
             "venue_id": show.venue_id,
             "venue_name": show.venue.name,
@@ -512,17 +496,17 @@ def show_artist(artist_id):
         })
 
     data = {
-        "id": artist_query.id,
-        "name": artist_query.name,
-        "genres": artist_query.genres,
-        "city": artist_query.city,
-        "state": artist_query.state,
-        "phone": artist_query.phone,
-        "website": artist_query.website,
-        "facebook_link": artist_query.facebook_link,
-        "seeking_venue": artist_query.seeking_venue,
-        "seeking_description": artist_query.seeking_description,
-        "image_link": artist_query.image_link,
+        "id": artist_get.id,
+        "name": artist_get.name,
+        "genres": artist_get.genres,
+        "city": artist_get.city,
+        "state": artist_get.state,
+        "phone": artist_get.phone,
+        "website": artist_get.website,
+        "facebook_link": artist_get.facebook_link,
+        "seeking_venue": artist_get.seeking_venue,
+        "seeking_description": artist_get.seeking_description,
+        "image_link": artist_get.image_link,
         "past_shows": past_shows,
         "upcoming_shows": upcoming_shows,
         "past_shows_count": len(past_shows),
@@ -539,7 +523,7 @@ def show_artist(artist_id):
     #     "website": "https://www.gunsnpetalsband.com",
     #     "facebook_link": "https://www.facebook.com/GunsNPetals",
     #     "seeking_venue": True,
-    #     "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
+    #     "seeking_description": "Looking for shows to perform at in the San Francisco Bay place!",
     #     "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
     #     "past_shows": [{
     #         "venue_id": 1,
@@ -621,7 +605,7 @@ def edit_artist(artist_id):
     #     "website": "https://www.gunsnpetalsband.com",
     #     "facebook_link": "https://www.facebook.com/GunsNPetals",
     #     "seeking_venue": True,
-    #     "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
+    #     "seeking_description": "Looking for shows to perform at in the San Francisco Bay place!",
     #     "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80"
     # }
     # TODO: populate form with fields from artist with ID <artist_id>
@@ -648,20 +632,21 @@ def edit_artist_submission(artist_id):
     # TODO: take values from the form submitted, and update existing
     # artist record with ID <artist_id> using the new attributes
 
+    form = ArtistForm(request.form)
     error = False
     artist = Artist.query.get(artist_id)
 
     try:
-        artist.name = request.form['name']
-        artist.city = request.form['city']
-        artist.state = request.form['state']
-        artist.phone = request.form['phone']
+        artist.name = form.name.data
+        artist.city = form.city.data
+        artist.state = form.state.data
+        artist.phone = form.phone.data
         artist.genres = request.form.getlist('genres')
-        artist.image_link = request.form['image_link']
-        artist.facebook_link = request.form['facebook_link']
-        artist.website = request.form['website']
+        artist.image_link = form.image_link.data
+        artist.facebook_link = form.facebook_link.data
+        artist.website = form.website.data
         artist.seeking_venue = True if 'seeking_venue' in request.form else False
-        artist.seeking_description = request.form['seeking_description']
+        artist.seeking_description = form.seeking_description.data
 
         db.session.commit()
     except:
@@ -810,10 +795,10 @@ def shows():
     # displays list of shows at /shows
     # TODO: replace with real venues data.
 
-    shows_query = db.session.query(Show).join(Artist).join(Venue).all()
+    shows_get = db.session.query(Show).join(Artist).join(Venue).all()
 
     data = []
-    for show in shows_query:
+    for show in shows_get:
         data.append({
             "venue_id": show.venue_id,
             "venue_name": show.venue.name,
